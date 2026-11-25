@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apply Hub</title>
+<style>
+:root{--bg:#faf8f5;--fg:#1d1b18;--mut:#6b655c;--card:#fff;--bd:#e3ded6;--ac:#c2410c;--ok:#15803d;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171513;--fg:#f2eee8;--mut:#a39c91;--card:#211e1b;--bd:#3a3631;--ac:#fb923c;--ok:#4ade80;--warn:#fbbf24;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171513;--fg:#f2eee8;--mut:#a39c91;--card:#211e1b;--bd:#3a3631;--ac:#fb923c;--ok:#4ade80;--warn:#fbbf24;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:820px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 2px}p.s{color:var(--mut);margin:0 0 12px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px}
+nav button,.b{border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:8px 13px;border-radius:8px;cursor:pointer;font:inherit;white-space:nowrap}
+nav button.on,.b.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+section{display:none}section.on{display:block}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+textarea,input,select{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);margin:4px 0 10px}
+textarea{min-height:140px;resize:vertical}label{font-weight:600;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+.sc{font-size:34px;font-weight:700}.mut{color:var(--mut);font-size:13px}
+pre{white-space:pre-wrap;word-wrap:break-word;font:13px/1.5 ui-monospace,monospace;background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--bd)}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.ok{color:var(--ok)}.wn{color:var(--warn)}ul{margin:4px 0 8px;padding-left:20px}
+.note{border-left:3px solid var(--ac);padding:6px 10px;font-size:13px;color:var(--mut);margin-bottom:10px}
+</style><script>
+// ---- Settings for running outside claude.ai (e.g. GitHub Pages) ----
+// Paste your Azure Function URL for the AI proxy, e.g. https://your-app.azurewebsites.net/api/ai
+window.APP_CONFIG={aiUrl:""};
+if(!window.claude){window.claude={use:async n=>{
+ if(n==="downloads")return{save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}};
+ if(n==="sample"&&window.APP_CONFIG.aiUrl)return async p=>{const r=await fetch(window.APP_CONFIG.aiUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:typeof p==="string"?p:JSON.stringify(p)})});if(!r.ok)throw new Error("AI service error");return await r.json()};
+ return null}}}
+</script>
+</head><body><main>
+<h1>Apply Hub</h1><p class="s">Tailor your CV, check your fit honestly, track applications, and verify work history.</p>
+<nav id="nav"></nav>
+
+<section id="t0" class="on"><div class="c">
+<label>Master CV (everything you've done, in your own words)</label><textarea id="cv" style="min-height:260px" placeholder="Paste your full CV here"></textarea>
+<label>Where you want to go (used to decide what to lead with)</label><input id="dir" placeholder="e.g. back-end / DevOps, away from phone support">
+<button class="b p" id="saveCv">Save</button> <span class="mut" id="cvm"></span></div></section>
+
+<section id="t1"><div class="c">
+<div class="row"><div><label>Company</label><input id="co"></div><div><label>Role</label><input id="ro"></div></div>
+<label>Job spec</label><textarea id="spec" placeholder="Paste the job spec"></textarea>
+<label>Special application rules (optional)</label><input id="rules" placeholder='e.g. put "SYSTEMS" at top; save as "CV Systems"'>
+<div class="row"><button class="b p" id="fit">Check my fit</button><button class="b" id="tail">Tailor CV + cover note</button></div></div>
+<div id="out"></div></section>
+
+<section id="t2"><div class="row" id="stats" style="margin-bottom:12px"></div><div class="c"><div id="trk" class="mut">No applications yet.</div></div></section>
+
+<section id="t3">
+<div class="note">Prototype: claims are reviewed by the page owner acting as the verifier. Ratings carry no user ID, but treat anonymity as best-effort, not guaranteed. Keep comments free of names and identifying details.</div>
+<div class="c"><b>1. Claim you worked somewhere</b>
+<div class="row"><div><label>Organisation</label><input id="vc"></div><div><label>Role</label><input id="vr"></div><div><label>Years</label><input id="vy" placeholder="2021–2023"></div><div><label>Organisation domain</label><input id="vd" placeholder="acme.co.za"></div></div>
+<label>Your work email on that domain</label><input id="ve" type="email" placeholder="you@acme.co.za"><button class="b p" id="vsub">Submit claim</button><div id="vlist" class="mut"></div></div>
+<div class="c" id="vq" style="display:none"><b>Verifier queue</b><div class="mut">The email already matches the organisation's domain. Before verifying, confirm the person really controls that mailbox (e.g. email them a code).</div><div id="vqi"></div></div>
+<div class="c"><b>2. Rate an organisation (verified past or current staff only)</b>
+<label>Organisation</label><select id="rc"></select>
+<div class="row"><div><label>Management (1–5)</label><input id="r1" type="number" min="1" max="5" value="3"></div><div><label>Culture (1–5)</label><input id="r2" type="number" min="1" max="5" value="3"></div><div><label>Pay fairness (1–5)</label><input id="r3" type="number" min="1" max="5" value="3"></div></div>
+<label>Comment (no names)</label><textarea id="rt" style="min-height:70px"></textarea><button class="b p" id="rsub">Post anonymously</button> <span class="mut" id="rm"></span></div>
+<div class="c"><b>Ratings by organisation</b><div id="rl" class="mut">Loading…</div></div>
+<div class="c"><b>3. Your public profile</b><div class="mut">Shows your name, headline and domain-verified employers.</div><div class="row"><div><label>Name</label><input id="pn"></div><div><label>Headline</label><input id="ph"></div></div><button class="b p" id="psave">Save profile</button> <span class="mut" id="pm"></span></div>
+<div class="c"><b>4. Reviews of people</b><label>Find a person</label><select id="pp"></select><div id="pv"></div>
+<div id="pf" style="display:none"><div class="row"><div><label>Your relationship</label><select id="pr"><option>Colleague</option><option>Manager</option><option>Direct report</option></select></div><div><label>Rating (1–5)</label><input id="pg" type="number" min="1" max="5" value="4"></div></div><div id="po"></div><label>Review</label><textarea id="pt" style="min-height:80px"></textarea><button class="b p" id="pbtn">Post review</button> <span class="mut" id="pk"></span></div></div></section>
+
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tabs=["My CV","Match & Tailor","Tracker","Verify & Rate"];
+tabs.forEach((t,i)=>{const b=document.createElement("button");b.textContent=t;b.onclick=()=>show(i);b.id="n"+i;$("nav").append(b)});
+function show(i){tabs.forEach((_,j)=>{$("t"+j).classList.toggle("on",i===j);$("n"+j).classList.toggle("on",i===j)});if(i===3)loadVer()}
+show(0);
+let db=null,uid="local",user=null,sample=null,dl=null,tracker=[],claims=[],lastCv="",lastFit=null,cur=null;
+const ls={g:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+async function init(){
+ try{db=await claude.use("db");user=await claude.use("user");if(user)uid=await user.id()}catch(e){}
+ try{sample=await claude.use("sample")}catch(e){}
+ try{dl=await claude.use("downloads")}catch(e){}
+ const p=await load("profile");if(p){$("cv").value=p.cv||"";$("dir").value=p.dir||""}
+ const t=await load("tracker");tracker=(t&&t.items)||[];drawTrk();
+}
+async function load(k){try{if(db){const s=await db.doc("data/users/"+uid+"/"+k).get();return s.exists?s.data():null}}catch(e){}return ls.g(k)}
+async function save(k,v){try{if(db){await db.doc("data/users/"+uid+"/"+k).set(v);return}}catch(e){}ls.s(k,v)}
+$("saveCv").onclick=async()=>{await save("profile",{cv:$("cv").value,dir:$("dir").value});$("cvm").textContent="Saved"};
+
+async function ask(prompt){if(!sample)throw new Error("AI not available here");return (await sample(prompt,{cache:false})).text}
+function ctx(){return `MASTER CV:\n${$("cv").value}\n\nCANDIDATE DIRECTION: ${$("dir").value}\n\nJOB: ${$("ro").value} at ${$("co").value}\n${$("spec").value}`}
+function chk(){if(!$("cv").value.trim()){alert("Add your master CV first");show(0);return false}if(!$("spec").value.trim()){alert("Paste a job spec");return false}return true}
+$("fit").onclick=async()=>{if(!chk())return;$("out").innerHTML='<div class="c mut">Reading the spec…</div>';
+ try{const r=await ask(`You assess job fit for a job seeker. Be honest but kind and constructive: lead with real strengths, frame gaps as things they can address, never discourage unfairly, never invent experience. Reply ONLY with JSON: {"score":0-100,"verdict":"strong fit|good fit|partial fit|stretch","summary":"2 sentences","strengths":[...],"gaps":[...],"advice":"should they apply, and how to position","worth_applying":true|false}\n\n`+ctx());
+  const j=JSON.parse(r.replace(/```json|```/g,"").trim());lastFit=j;
+  const L=a=>"<ul>"+(a||[]).map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>";
+  $("out").innerHTML=`<div class="c"><div class="sc ${j.score>=65?"ok":"wn"}">${esc(j.score)}%</div><b>${esc(j.verdict)}</b><p>${esc(j.summary)}</p><b>Strengths</b>${L(j.strengths)}<b>Gaps</b>${L(j.gaps)}<p>${esc(j.advice)}</p></div>`;
+ }catch(e){$("out").innerHTML='<div class="c wn">Could not complete the check: '+esc(e.message||e.code||"try again")+'</div>'}};
+$("tail").onclick=async()=>{if(!chk())return;$("out").innerHTML='<div class="c mut">Tailoring…</div>';
+ try{const r=await ask(`Tailor the master CV to the job. Rules: use ONLY facts in the master CV, never invent employers, dates, skills or qualifications; reorder and reword to match the spec's keywords; lead with what fits the candidate's direction; keep it to ~2 pages; plain text with simple headings. Obey these special application rules exactly: ${$("rules").value||"none"}. Output the CV, then a line "=====COVER=====", then a short, specific cover note (under 170 words).\n\n`+ctx());
+  const [cv,cover]=r.split("=====COVER=====");lastCv=cv.trim();cur={co:$("co").value,ro:$("ro").value,d:new Date().toISOString().slice(0,10),fit:lastFit?lastFit.score:null,st:"Tailored"};tracker.unshift(cur);await save("tracker",{items:tracker});drawTrk();
+  $("out").innerHTML=`<div class="c"><b>Tailored CV</b><pre>${esc(cv.trim())}</pre><select id="fmt" style="width:auto;display:inline-block;margin:0"><option value="docx">Word (.docx)</option><option value="pdf">PDF (.pdf)</option><option value="txt">Plain text (.txt)</option><option value="md">Markdown (.md)</option></select> <button class="b" id="d1">Download CV</button> <button class="b p" id="d2">I applied for this job</button></div><div class="c"><b>Cover note</b><pre>${esc((cover||"").trim())}</pre></div>`;
+  $("d1").onclick=()=>exportCv($("fmt").value);
+  $("d2").onclick=async()=>{if(!cur)return;cur.st="Applied";cur.ad=new Date().toISOString().slice(0,10);await save("tracker",{items:tracker});drawTrk();show(2)};
+ }catch(e){$("out").innerHTML='<div class="c wn">Could not tailor: '+esc(e.message||e.code||"try again")+'</div>'}};
+async function exportCv(fmt){
+ const m=($("rules").value.match(/"([^"]+)"[^"]*$/)||[])[1];
+ const base=(m||"CV "+$("co").value||"CV").replace(/[^\w ._-]/g,"").trim()||"CV";
+ const lines=lastCv.split("\n");let data;
+ try{
+  if(fmt==="docx"){
+   if(!window.docx)throw new Error("Word export library did not load");
+   const {Document,Packer,Paragraph,TextRun}=window.docx;
+   const ps=lines.map(l=>{const t=l.replace(/\*\*|^#+\s*/g,"").trim();if(!t)return new Paragraph({});
+    const bul=/^[-•*]\s+/.test(t);const head=!bul&&t.length<45&&!/[.,;]$/.test(t)&&(t===t.toUpperCase()||/^#/.test(l));
+    if(bul)return new Paragraph({text:t.replace(/^[-•*]\s+/,""),bullet:{level:0}});
+    return new Paragraph({spacing:{before:head?200:0,after:60},children:[new TextRun({text:t,bold:head,size:head?26:22})]})});
+   data=await Packer.toBlob(new Document({sections:[{children:ps}]}));
+  }else if(fmt==="pdf"){
+   if(!window.jspdf)throw new Error("PDF export library did not load");
+   const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4"});pdf.setFont("helvetica","normal");pdf.setFontSize(10.5);
+   let y=18;
+   lines.forEach(l=>{const t=l.replace(/\*\*|^#+\s*/g,"");const head=t.trim().length>0&&t.trim().length<45&&t===t.toUpperCase()&&!/[a-z]/.test(t);
+    pdf.setFont("helvetica",head?"bold":"normal");
+    const w=pdf.splitTextToSize(t||" ",178);w.forEach(x=>{if(y>280){pdf.addPage();y=18}pdf.text(x,16,y);y+=5.2});if(head)y+=1});
+   data=pdf.output("blob");
+  }else data=new Blob([lastCv],{type:"text/plain"});
+  if(!dl)throw new Error("Downloads unavailable here; copy the text instead");
+  await dl.save({filename:base+"."+fmt,data});
+ }catch(e){alert(e.message||"Could not export")}
+}
+function drawStats(){const n=s=>tracker.filter(a=>a.st===s).length;
+ const applied=tracker.filter(a=>a.st!=="Tailored").length,hired=n("Hired");
+ const T=[["Applied",applied],["Interviews",n("Interview")],["Hired",hired],["Rejected",n("Rejected")],["Tailored, not applied",n("Tailored")]];
+ $("stats").innerHTML=T.map(t=>`<div class="c" style="margin:0;text-align:center"><div class="sc">${t[1]}</div><div class="mut">${t[0]}</div></div>`).join("")+(applied?`<div class="c" style="margin:0;flex-basis:100%" ><span class="mut">Success rate: ${Math.round(hired/applied*100)}% hired from ${applied} applied</span></div>`:"")}
+function drawTrk(){drawStats();if(!tracker.length){$("trk").textContent="No applications yet.";return}
+ $("trk").innerHTML=tracker.map((a,i)=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${esc(a.ro)}</b> · ${esc(a.co)} <span class="mut">${esc(a.d)}${a.fit!=null?" · fit "+esc(a.fit)+"%":""}</span><br><select data-i="${i}">${["Tailored","Applied","Interview","Hired","Rejected"].map(s=>`<option${s===a.st?" selected":""}>${s}</option>`).join("")}</select></div>`).join("");
+ $("trk").querySelectorAll("select").forEach(s=>s.onchange=async()=>{tracker[s.dataset.i].st=s.value;if(s.value!=="Tailored"&&!tracker[s.dataset.i].ad)tracker[s.dataset.i].ad=new Date().toISOString().slice(0,10);await save("tracker",{items:tracker});drawStats()})}
+
+// Verification + ratings
+async function loadVer(){
+ const me=await load("claims");claims=(me&&me.items)||[];
+ $("vlist").innerHTML=claims.map(c=>`<div>${esc(c.co)} · ${esc(c.ro)} · ${esc(c.y)} · ${esc(c.dom||"")} <span class="tag ${c.st==="verified"?"ok":""}">${esc(c.st)}</span></div>`).join("");
+ const ok=[...new Set(claims.filter(c=>c.st==="verified").map(c=>c.co))];
+ $("rc").innerHTML=ok.length?ok.map(o=>`<option>${esc(o)}</option>`).join(""):"<option value=''>Get a claim verified first</option>";
+ try{if(db&&user&&await user.canEdit()){$("vq").style.display="block";const s=await db.collection("claims").get();const q=[];
+  s.docs.forEach(d=>{const x=d.data();(x.items||[]).forEach((c,i)=>{if(c.st==="pending")q.push({u:d.id,i,c})})});
+  $("vqi").innerHTML=q.length?q.map((x,k)=>`<div style="padding:6px 0">${esc(x.c.co)} · ${esc(x.c.ro)} · ${esc(x.c.y)} · ${esc(x.c.dom||"")} · ${esc(x.c.em)} <button class="b" data-k="${k}">Email confirmed: verify</button></div>`).join(""):'<span class="mut">Nothing pending</span>';
+  $("vqi").querySelectorAll("button").forEach(b=>b.onclick=async()=>{const x=q[b.dataset.k];const r=db.doc("claims/"+x.u);const sn=await r.get();const it=sn.data().items;it[x.i].st="verified";await r.set({items:it});loadVer()})}}catch(e){}
+ drawRatings();drawPeople()}
+$("vsub").onclick=async()=>{const dom=$("vd").value.trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/,"").replace(/\/.*$/,""),em=$("ve").value.trim().toLowerCase(),ed=em.split("@")[1]||"";
+ const free=["gmail.com","googlemail.com","yahoo.com","outlook.com","hotmail.com","live.com","icloud.com","proton.me","protonmail.com","webmail.co.za","mweb.co.za"];
+ if(!$("vc").value.trim()||!dom||!em){alert("Add the organisation, its domain and your work email");return}
+ if(free.includes(ed)||free.includes(dom)){alert("Use your work email, not a personal email provider");return}
+ if(!(ed===dom||ed.endsWith("."+dom))){alert("Your email must be on the organisation's domain ("+dom+")");return}
+ claims.push({co:$("vc").value.trim(),dom,ro:$("vr").value,y:$("vy").value,em,st:"pending"});
+ try{if(db)await db.doc("claims/"+uid).set({items:claims})}catch(e){}await save("claims",{items:claims});["vc","vr","vy","ve","vd"].forEach(k=>$(k).value="");loadVer()};
+$("rsub").onclick=async()=>{const co=$("rc").value;if(!co)return;
+ const r=n=>Math.min(5,Math.max(1,+$(n).value||3));
+ try{await db.collection("ratings").add({co,m:r("r1"),c:r("r2"),p:r("r3"),t:$("rt").value.slice(0,500),at:Date.now()});$("rm").textContent="Posted";$("rt").value="";drawRatings()}catch(e){$("rm").textContent="Could not post"}};
+async function drawRatings(){try{const s=await db.collection("ratings").get();const g={};
+ s.docs.forEach(d=>{const x=d.data();(g[x.co]=g[x.co]||[]).push(x)});
+ const k=Object.keys(g);if(!k.length){$("rl").textContent="No ratings yet.";return}
+ const av=(a,f)=>(a.reduce((t,x)=>t+(+x[f]||0),0)/a.length).toFixed(1);
+ $("rl").innerHTML=k.map(o=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${esc(o)}</b> <span class="mut">(${g[o].length} verified reviews)</span><br>Management ${av(g[o],"m")} · Culture ${av(g[o],"c")} · Pay ${av(g[o],"p")}${g[o].filter(x=>x.t).slice(0,3).map(x=>`<div class="mut">“${esc(x.t)}”</div>`).join("")}</div>`).join("")}
+ catch(e){$("rl").textContent="Ratings unavailable (sign in to view)."}}
+let profs={};
+async function drawPeople(){try{const s=await db.collection("profiles").get();profs={};s.docs.forEach(d=>profs[d.id]=d.data());
+ const ok=[...new Set(claims.filter(c=>c.st==="verified").map(c=>c.co))],me=profs[uid];
+ if(me){if(JSON.stringify(ok)!==JSON.stringify(me.orgs||[])){me.orgs=ok;db.doc("profiles/"+uid).set(me)}if(!$("pn").value){$("pn").value=me.name||"";$("ph").value=me.headline||""}}
+ const ids=Object.keys(profs).filter(i=>i!==uid);
+ $("pp").innerHTML="<option value=''>Select a person</option>"+ids.map(i=>`<option value="${esc(i)}">${esc(profs[i].name||"Unnamed")} · ${esc(profs[i].headline||"")}</option>`).join("")}catch(e){}}
+$("psave").onclick=async()=>{const ok=[...new Set(claims.filter(c=>c.st==="verified").map(c=>c.co))];try{await db.doc("profiles/"+uid).set({name:$("pn").value.slice(0,80),headline:$("ph").value.slice(0,120),orgs:ok});$("pm").textContent="Saved";drawPeople()}catch(e){$("pm").textContent="Could not save"}};
+$("pp").onchange=async()=>{const id=$("pp").value;$("pv").innerHTML="";$("pf").style.display="none";if(!id||!profs[id])return;const p=profs[id],rv=[];
+ try{const s=await db.collection("peerReviews").get();s.docs.forEach(d=>{const x=d.data();if(x.to===id)rv.push(x)})}catch(e){}
+ const avg=rv.length?(rv.reduce((t,x)=>t+(+x.g||0),0)/rv.length).toFixed(1):"–";
+ $("pv").innerHTML=`<div style="margin:8px 0"><b>${esc(p.name)}</b> <span class="mut">${esc(p.headline||"")}</span><br>${(p.orgs||[]).map(o=>`<span class="tag ok">✓ ${esc(o)}</span>`).join(" ")||'<span class="mut">No verified employers</span>'}<br>Peer rating ${avg} (${rv.length})${rv.map(x=>`<div class="mut" style="margin-top:6px">${esc(x.rel)} at ${esc(x.org)}: “${esc(x.t)}” (${esc(x.g)}/5)</div>`).join("")}</div>`;
+ const mine=new Set(claims.filter(c=>c.st==="verified").map(c=>c.co)),shared=(p.orgs||[]).filter(o=>mine.has(o));
+ if(shared.length){$("pf").style.display="block";$("po").innerHTML='<label>Where did you work together?</label><select id="porg">'+shared.map(o=>`<option>${esc(o)}</option>`).join("")+"</select>"}else $("pv").innerHTML+='<div class="mut">You can review this person only if you share a domain-verified employer.</div>'};
+$("pbtn").onclick=async()=>{const id=$("pp").value,org=$("porg")&&$("porg").value;if(!id||!org||!$("pt").value.trim())return;
+ try{await db.collection("peerReviews").add({to:id,org,rel:$("pr").value,g:Math.min(5,Math.max(1,+$("pg").value||4)),t:$("pt").value.slice(0,600),at:Date.now()});$("pk").textContent="Posted";$("pt").value="";$("pp").onchange()}catch(e){$("pk").textContent="Could not post"}};
+init();
+</script></main></body></html>
